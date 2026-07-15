@@ -6,15 +6,15 @@ import{CreateCourseCategoryModel} from "../models/courseCategory.model.js";
 import{CreateCourseModel} from "../models/course.model.js"
 import{CreateEnrollmentModel} from "../models/enrollment.model.js"
 import{CreateStudentModel} from "../models/student.model.js"
-const sequelize =new Sequelize(
-    'test',
-    'postgres',
-    '123',
-    {
-        host:'localhost',
-        dialect:'postgres'
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
     }
-);
+});
 
 let userModel=null;
 let refreshTokenModel=null;
