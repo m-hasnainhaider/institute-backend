@@ -71,7 +71,8 @@ app.post('/api/auth/refresh-token', async (req, res) => {
             await refreshTokenModel.create({ user_id: decodedPayLoad.userId, token_string: newrefreshToken });
             res.cookie('refreshToken', newrefreshToken, {
                 httpOnly: true,
-                secure: false,
+                secure: true,       // required when sameSite is 'none'
+                sameSite: 'none',   // required for cross-site cookies
                 maxAge: 7 * 24 * 60 * 60 * 1000 //7 days age
             })
             return res.status(200).json({ message: "access token refreshed", accessToken: newAccessToken });
@@ -119,7 +120,8 @@ app.get('/api/auth/check-session', async (req, res) => {//login without the emai
             await refreshTokenModel.create({ user_id: userId, token_string: newRefreshToken });
             res.cookie('refreshToken', newRefreshToken, {
                 httpOnly: true,
-                secure: false,
+                secure: true,       // required when sameSite is 'none'
+                sameSite: 'none',   // required for cross-site cookies
                 maxAge: 7 * 24 * 60 * 60 * 1000
             })
 
@@ -159,7 +161,8 @@ app.post('/api/create-account', async (req, res) => {
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,// Frontend JavaScript cannot touch or steal this!
-            secure: false,  // Set to true later when using production HTTPS
+            secure: true,       // required when sameSite is 'none'
+            sameSite: 'none',   // required for cross-site cookies
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days matching the token lifespan
         })
 
@@ -197,7 +200,8 @@ app.post('/api/login', async (req, res) => {
 
             res.cookie('refreshToken', refreshToken, {
                 httpOnly: true,
-                secure: false,
+                secure: true,       // required when sameSite is 'none'
+                sameSite: 'none',   // required for cross-site cookies
                 maxAge: 7 * 24 * 60 * 60 * 1000
             })
             res.status(200).json({
