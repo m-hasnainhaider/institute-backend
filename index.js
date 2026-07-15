@@ -39,44 +39,86 @@ app.listen(process.env.PORT, () => {
 })
 
 
+// app.post('/api/auth/refresh-token', async (req, res) => {
+//     try {///this is used when the access token get expired.
+//         const incomingRefreshToken = req.cookies.refreshToken;// 1:pala refresh token loo gaa
+//         if (!incomingRefreshToken) {
+//             return res.status(401).json({ error: "No Token provided" });
+//         }
+//         try {
+//             //2.decode the refresh token to read its inner values.
+//             let decodedPayLoad = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
+//             //3.jis refresh token sa request ki ha user naa.uss token ko DB sa laa k aow ga
+//             let tokenFromDb = await refreshTokenModel.findOne({ where: { token_string: incomingRefreshToken } });
+//             //4.Check kroo ga k token exist krtaa ha? aur usaa kisi naa palaa user too nahi kia?
+//             if (!tokenFromDb) {
+//                 return res.status(403).json({ message: "token not found" });
+//             }
+//             if (tokenFromDb.is_used === true) {
+//                 // REPLAY ATTACK! Delete all tokens
+//                 await refreshTokenModel.destroy({
+//                     where: { user_id: tokenFromDb.user_id }
+//                 });
+//                 return res.status(403).json({ message: "Token already used" });
+//             }
+//             //5.refreshToken bulkul sai thaa is liaa new accessToken banayaa.
+//             const newAccessToken = jwt.sign({ user_id: decodedPayLoad.user_id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+//             //6.pooranaa refreshToken ko scrap kroo gaa.k yaa token use hoo chukaa haa.DB ma store kroo ga.
+//             await tokenFromDb.update({ is_used: true });
+//             //7. new refresh token generate kroo ga.
+//             let newrefreshToken = jwt.sign({ user_id: decodedPayLoad.userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+//             //8.save newrefreshToken to DB
+//             await refreshTokenModel.create({ user_id: decodedPayLoad.userId, token_string: newrefreshToken });
+//             res.cookie('refreshToken', newrefreshToken, {
+//                 httpOnly: true,
+//                 secure: true,       // required when sameSite is 'none'
+//                 sameSite: 'none',   // required for cross-site cookies
+//                 maxAge: 7 * 24 * 60 * 60 * 1000 //7 days age
+//             })
+//             return res.status(200).json({ message: "access token refreshed", accessToken: newAccessToken });
+
+//         }
+//         catch (jwterror) {
+//             console.error(jwterror.message);
+//             res.status(401).json({ message: 'Token is not right' });
+//         }
+//     }
+//     catch (error) {
+//         console.error(error.message);
+//         res.status(401).json({ message: 'unauthorized' });
+//     }
+
+
+// })
 app.post('/api/auth/refresh-token', async (req, res) => {
-    try {///this is used when the access token get expired.
-        const incomingRefreshToken = req.cookies.refreshToken;// 1:pala refresh token loo gaa
+    try {
+        const incomingRefreshToken = req.cookies.refreshToken;
         if (!incomingRefreshToken) {
             return res.status(401).json({ error: "No Token provided" });
         }
         try {
-            //2.decode the refresh token to read its inner values.
             let decodedPayLoad = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
-            //3.jis refresh token sa request ki ha user naa.uss token ko DB sa laa k aow ga
             let tokenFromDb = await refreshTokenModel.findOne({ where: { token_string: incomingRefreshToken } });
-            //4.Check kroo ga k token exist krtaa ha? aur usaa kisi naa palaa user too nahi kia?
             if (!tokenFromDb) {
                 return res.status(403).json({ message: "token not found" });
             }
             if (tokenFromDb.is_used === true) {
-                // REPLAY ATTACK! Delete all tokens
                 await refreshTokenModel.destroy({
                     where: { user_id: tokenFromDb.user_id }
                 });
                 return res.status(403).json({ message: "Token already used" });
             }
-            //5.refreshToken bulkul sai thaa is liaa new accessToken banayaa.
             const newAccessToken = jwt.sign({ user_id: decodedPayLoad.user_id }, process.env.JWT_SECRET, { expiresIn: '15m' });
-            //6.pooranaa refreshToken ko scrap kroo gaa.k yaa token use hoo chukaa haa.DB ma store kroo ga.
             await tokenFromDb.update({ is_used: true });
-            //7. new refresh token generate kroo ga.
-            let newrefreshToken = jwt.sign({ user_id: decodedPayLoad.userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-            //8.save newrefreshToken to DB
-            await refreshTokenModel.create({ user_id: decodedPayLoad.userId, token_string: newrefreshToken });
+            let newrefreshToken = jwt.sign({ user_id: decodedPayLoad.user_id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+            await refreshTokenModel.create({ user_id: decodedPayLoad.user_id, token_string: newrefreshToken });
             res.cookie('refreshToken', newrefreshToken, {
                 httpOnly: true,
-                secure: true,       // required when sameSite is 'none'
-                sameSite: 'none',   // required for cross-site cookies
-                maxAge: 7 * 24 * 60 * 60 * 1000 //7 days age
+                secure: true,
+                sameSite: 'none',
+                maxAge: 7 * 24 * 60 * 60 * 1000
             })
             return res.status(200).json({ message: "access token refreshed", accessToken: newAccessToken });
-
         }
         catch (jwterror) {
             console.error(jwterror.message);
@@ -87,26 +129,79 @@ app.post('/api/auth/refresh-token', async (req, res) => {
         console.error(error.message);
         res.status(401).json({ message: 'unauthorized' });
     }
-
-
 })
-app.get('/api/auth/check-session', async (req, res) => {//login without the email and pass using refresh token.
+// app.get('/api/auth/check-session', async (req, res) => {//login without the email and pass using refresh token.
+//     try {
+//         let incomingRefreshToken = req.cookies.refreshToken;
+//         if (!incomingRefreshToken) {
+//             return res.status(401).json({ message: 'No cookie Found' })
+//         }
+//         try {
+//             //token ko check kro k woo sai haa
+//             let decodedPayLoad = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
+//             //check kro k woo db ma bhi haa
+//             let tokenFromDb = await refreshTokenModel.findOne({ where: { token_string: incomingRefreshToken } });
+
+//             if (!tokenFromDb) {
+//                 return res.status(403).json({ message: "token not found" });
+//             }
+//             if (tokenFromDb.is_used === true) {
+//                 // REPLAY ATTACK! Delete all tokens
+//                 await refreshTokenModel.destroy({
+//                     where: { user_id: tokenFromDb.user_id }
+//                 });
+//                 return res.status(403).json({ message: "Token already used" });
+//             }
+//             let userId = decodedPayLoad.user_id;
+//             let user_data = await userModel.findOne({ where: { id: userId } });
+//             let newAccessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+//             let newRefreshToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+//             await tokenFromDb.update({ is_used: true });
+//             await refreshTokenModel.create({ user_id: userId, token_string: newRefreshToken });
+//             res.cookie('refreshToken', newRefreshToken, {
+//                 httpOnly: true,
+//                 secure: true,       // required when sameSite is 'none'
+//                 sameSite: 'none',   // required for cross-site cookies
+//                 maxAge: 7 * 24 * 60 * 60 * 1000
+//             })
+
+//             res.status(200).json({
+//                 success: true,
+//                 user: {
+//                     id: user_data.id,
+//                     name: user_data.name,
+//                     email: user_data.email,
+//                     country_code: user_data.country_code,
+//                     subscriber_no: user_data.subscriber_no,
+//                     role: user_data.role
+//                 }
+//                 , accessToken: newAccessToken
+//             });
+//         }
+//         catch (jwterror) {
+//             console.log(jwterror.message);
+//             return res.status(401).json({ message: 'Token is not correct' });
+//         }
+//     }
+//     catch (error) {
+//         console.error(error.message);
+//         return res.status(401).json({ message: 'Token is not ' })
+//     }
+// })
+app.get('/api/auth/check-session', async (req, res) => {
     try {
         let incomingRefreshToken = req.cookies.refreshToken;
         if (!incomingRefreshToken) {
             return res.status(401).json({ message: 'No cookie Found' })
         }
         try {
-            //token ko check kro k woo sai haa
             let decodedPayLoad = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
-            //check kro k woo db ma bhi haa
             let tokenFromDb = await refreshTokenModel.findOne({ where: { token_string: incomingRefreshToken } });
 
             if (!tokenFromDb) {
                 return res.status(403).json({ message: "token not found" });
             }
             if (tokenFromDb.is_used === true) {
-                // REPLAY ATTACK! Delete all tokens
                 await refreshTokenModel.destroy({
                     where: { user_id: tokenFromDb.user_id }
                 });
@@ -114,14 +209,14 @@ app.get('/api/auth/check-session', async (req, res) => {//login without the emai
             }
             let userId = decodedPayLoad.user_id;
             let user_data = await userModel.findOne({ where: { id: userId } });
-            let newAccessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-            let newRefreshToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+            let newAccessToken = jwt.sign({ user_id: userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+            let newRefreshToken = jwt.sign({ user_id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
             await tokenFromDb.update({ is_used: true });
             await refreshTokenModel.create({ user_id: userId, token_string: newRefreshToken });
             res.cookie('refreshToken', newRefreshToken, {
                 httpOnly: true,
-                secure: true,       // required when sameSite is 'none'
-                sameSite: 'none',   // required for cross-site cookies
+                secure: true,
+                sameSite: 'none',
                 maxAge: 7 * 24 * 60 * 60 * 1000
             })
 
